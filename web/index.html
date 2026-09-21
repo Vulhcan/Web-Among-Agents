@@ -1,0 +1,235 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AmongUs Visual Client</title>
+    <link rel="icon" type="image/png" href="/web/assets/skeld.png" />
+    <link rel="stylesheet" href="/web/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <h1>AmongUs Visual Client</h1>
+        <div class="header-actions">
+          <select id="role-select" class="role-select" title="Human player role">
+            <option value="random">Role: Random</option>
+            <option value="crewmate">Role: Crewmate</option>
+            <option value="impostor">Role: Impostor</option>
+          </select>
+          <button id="create-game-btn" type="button">Create Game</button>
+          <div id="create-status" class="muted">No game created.</div>
+          <button id="sound-toggle-btn" type="button" class="sound-btn">Sound: On</button>
+          <label for="sound-volume" class="sound-volume-label">
+            Vol
+            <input id="sound-volume" type="range" min="0" max="100" step="1" value="35" />
+          </label>
+        </div>
+        <div id="winner-banner" class="winner-banner hidden"></div>
+        <div id="error-banner" class="error hidden"></div>
+      </header>
+
+      <main id="game-view" class="main-layout hidden">
+        <section class="panel map-panel">
+          <h2>Ship Layout</h2>
+          <div id="map-grid" class="map-grid"></div>
+          <div id="mission-brief-panel" class="mission-brief-inline">
+            <div class="map-bottom-tabs">
+              <button id="tab-map-brief" class="map-bottom-tab active" type="button">Mission Brief</button>
+              <button id="tab-map-monitor" class="map-bottom-tab" type="button">Monitor</button>
+            </div>
+            <div id="panel-map-brief">
+              <pre id="mission-brief" class="brief-output">No mission briefing captured yet.</pre>
+            </div>
+            <div id="panel-map-monitor" class="hidden">
+              <div id="monitor-feed" class="monitor-feed">No monitor results yet. Go to Security and use VIEW MONITOR.</div>
+            </div>
+          </div>
+
+          <section id="log-view" class="log-panel hidden">
+            <h2>Player Journal</h2>
+            <div class="journal-tabs" role="tablist" aria-label="Player journal tabs">
+              <button id="tab-live-logs" class="journal-tab active" type="button" data-tab="live-logs">Live Logs</button>
+              <button id="tab-notes" class="journal-tab" type="button" data-tab="notes">Notes</button>
+            </div>
+
+            <div id="panel-live-logs" class="journal-panel">
+              <div id="latest-log" class="log-output">No visible events yet.</div>
+            </div>
+
+            <div id="panel-notes" class="journal-panel hidden">
+              <label for="notes-box"><strong>Private Notes</strong></label>
+              <textarea
+                id="notes-box"
+                class="notes-box"
+                placeholder="Write down suspects, alibis, timelines, and task confirmations..."
+              ></textarea>
+            </div>
+          </section>
+        </section>
+
+        <aside class="panel sidebar-panel">
+          <h2>Control Panel</h2>
+          <div id="role-banner" class="role-banner hidden"></div>
+          <div class="status-grid">
+            <div class="status-item"><strong>Game ID</strong><span id="game-id">-</span></div>
+            <div class="status-item"><strong>Status</strong><span id="status">-</span></div>
+            <div class="status-item"><strong>Phase</strong><span id="phase">-</span></div>
+            <div class="status-item"><strong>Timestep</strong><span id="timestep">-</span></div>
+            <div class="status-item"><strong>Other Player's Turn</strong><span id="current-player">-</span></div>
+            <div class="status-item"><strong>Turn</strong><span id="turn-state">-</span></div>
+          </div>
+
+          <section class="actions-section">
+            <h3>Available Actions</h3>
+            <div id="waiting-message" class="muted">Waiting for game state...</div>
+            <div id="actions" class="actions"></div>
+
+            <div id="speech-box" class="speech hidden">
+              <label for="speech-text"><strong>Speech Text</strong></label>
+              <input
+                id="speech-text"
+                type="text"
+                placeholder="Enter message for SPEAK action"
+                autocomplete="off"
+              />
+              <button id="submit-speech-btn" type="button">Submit Action</button>
+            </div>
+
+            <div id="monitor-box" class="speech hidden">
+              <label for="monitor-room"><strong>Monitor Room</strong></label>
+              <select id="monitor-room"></select>
+              <button id="submit-monitor-btn" type="button">Submit Action</button>
+            </div>
+          </section>
+
+          <section id="meeting-panel" class="meeting-panel hidden">
+            <h3>Meeting Feed</h3>
+            <div id="meeting-feed" class="meeting-feed"></div>
+          </section>
+
+          <section id="task-panel" class="task-panel">
+            <h3>Task Activity</h3>
+            <div class="task-progress-stack">
+              <div id="human-task-bar-group" class="task-progress-group">
+                <div class="task-progress-header">
+                  <span>Your Tasks</span>
+                  <span id="human-task-progress-text">-</span>
+                </div>
+                <div class="task-progress-track">
+                  <div id="human-task-progress-fill" class="task-progress-fill human"></div>
+                </div>
+              </div>
+              <div id="global-task-bar-group" class="task-progress-group hidden">
+                <div class="task-progress-header">
+                  <span>Crew Tasks (Global)</span>
+                  <span id="global-task-progress-text">-</span>
+                </div>
+                <div class="task-progress-track">
+                  <div id="global-task-progress-fill" class="task-progress-fill global"></div>
+                </div>
+              </div>
+            </div>
+            <div id="task-feed" class="task-feed">No task actions yet.</div>
+          </section>
+
+          <section id="crewmate-tasks-panel" class="task-panel">
+            <h3>My Remaining Tasks</h3>
+            <div id="human-tasks-list" class="human-tasks-list">-</div>
+          </section>
+
+          <section id="impostor-panel" class="task-panel hidden">
+            <h3>Impostor</h3>
+            <div class="kill-cooldown-row">
+              <span class="kill-cooldown-label">Kill Cooldown</span>
+              <span id="kill-cooldown-value" class="kill-cooldown-value">-</span>
+            </div>
+          </section>
+
+        </aside>
+      </main>
+
+      <div id="game-over-modal" class="game-over-modal hidden" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
+        <div class="game-over-backdrop"></div>
+        <div class="game-over-content">
+          <h2 id="game-over-title" class="game-over-title">Game Over</h2>
+          <p id="game-over-reason" class="game-over-reason"></p>
+          <button id="game-over-close-btn" type="button" class="game-over-close-btn">Dismiss</button>
+        </div>
+      </div>
+
+      <section id="faq-panel" class="panel faq-bottom-panel">
+        <h2>Quick FAQ</h2>
+        <div class="faq-list">
+          <details>
+            <summary>When can I report a body?</summary>
+            <p>You can report only if an unreported dead body is in your current room and a report-type action appears in Available Actions.</p>
+          </details>
+          <details>
+            <summary>Why does the button say "Report Body" instead of "Call Meeting" in Cafeteria?</summary>
+            <p>If an unreported dead body is present in your room (including Cafeteria), the action changes to REPORT DEAD BODY, taking priority over the emergency button.</p>
+          </details>
+          <details>
+            <summary>Can I see who killed a player?</summary>
+            <p>Yes, only if you were in the same room when the kill happened.</p>
+          </details>
+          <details>
+            <summary>Why do some players appear gray with hidden names?</summary>
+            <p>You can only identify players in your current room. Players in other rooms are shown as gray and anonymous.</p>
+          </details>
+          <details>
+            <summary>Who can see task activity entries?</summary>
+            <p>Task activity is shown only from your room perspective.</p>
+          </details>
+          <details>
+            <summary>Why don't I see all global logs?</summary>
+            <p>Logs are intentionally filtered to your player perspective. Hidden information from other rooms is not shown.</p>
+          </details>
+          <details>
+            <summary>What is the difference between CALL MEETING and REPORT DEAD BODY?</summary>
+            <p>Both start a meeting. CALL MEETING is the Cafeteria emergency button. REPORT DEAD BODY is triggered by finding a body.</p>
+          </details>
+          <details>
+            <summary>What happens when a body is reported?</summary>
+            <p>The game immediately switches from task phase to meeting phase.</p>
+          </details>
+          <details>
+            <summary>Why did a player message not appear in Meeting Feed?</summary>
+            <p>Only parsed SPEAK events from meeting logs are rendered in the feed.</p>
+          </details>
+          <details>
+            <summary>How does Security monitor work?</summary>
+            <p>Go to Security, choose VIEW MONITOR, select a room, and submit. You will receive monitor observations for that room.</p>
+          </details>
+          <details>
+            <summary>What does VIEW MONITOR show?</summary>
+            <p>From Security, it shows observations for the room you select.</p>
+          </details>
+          <details>
+            <summary>If I am an impostor, how do I know my teammate?</summary>
+            <p>Mission Brief shows your role. If you are an impostor, it also lists your impostor teammate(s).</p>
+          </details>
+          <details>
+            <summary>Why do available actions change every turn?</summary>
+            <p>Actions are recalculated each turn from phase, room, role, cooldowns, and nearby players.</p>
+          </details>
+          <details>
+            <summary>Do impostors have kill cooldown?</summary>
+            <p>Yes. After a kill, a cooldown must expire before KILL appears again.</p>
+          </details>
+          <details>
+            <summary>Can dead players act or vote?</summary>
+            <p>No. Dead players are excluded from normal actions and voting.</p>
+          </details>
+          <details>
+            <summary>Are my notes saved?</summary>
+            <p>Yes. Notes are saved in browser local storage on this machine and persist across refreshes.</p>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <script src="/web/config.js?v=9"></script>
+    <script src="/web/app.js?v=9"></script>
+  </body>
+</html>

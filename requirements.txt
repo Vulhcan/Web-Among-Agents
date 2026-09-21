@@ -1,0 +1,25 @@
+# Runtime dependencies for collecting games.
+# Pinned loosely so the repo keeps working as upstream packages move.
+
+# Agent <-> OpenRouter
+aiohttp>=3.11
+requests>=2.32
+python-dotenv>=1.0
+
+# Game engine
+numpy>=1.26
+pandas>=2.2
+networkx>=3.2
+
+# Human-vs-LLM web backend
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2.10
+
+# Optional in-game web map UI (amongagents/UI/WebMapUI.py)
+flask>=3.0
+flask-socketio>=5.3
+
+# Development
+pytest>=8.0
+pre-commit>=4.0
